@@ -1,41 +1,19 @@
 var express = require('express');
 var passport = require('passport');
-var Strategy = require('passport-openidconnect').Strategy;
 
 
-// Configure the Twitter strategy for use by Passport.
-//
-// OAuth 1.0-based strategies require a `verify` function which receives the
-// credentials (`token` and `tokenSecret`) for accessing the Twitter API on the
-// user's behalf, along with the user's profile.  The function must invoke `cb`
-// with a user object, which will be set at `req.user` in route handlers after
-// authentication.
-passport.use(new Strategy({
-    clientID: process.env.CLIENT_ID,
-    clientSecret: process.env.CLIENT_SECRET,
-    authorizationURL: 'https://login0.myauth0.com/i/oauth2/authorize',
-    tokenURL: 'https://login0.myauth0.com/oauth/token',
-    callbackURL: 'http://localhost:3000/callback'
+var Strategy = require('passport-saml').Strategy;
+
+passport.use('saml2', new Strategy({
+    path: '/login/callback',
+    entryPoint: 'https://openidp.feide.no/simplesaml/saml2/idp/SSOService.php',
+    issuer: 'passport-saml'
   },
-  function(token, tokenSecret, profile, cb) {
-    // In this example, the user's Twitter profile is supplied as the user
-    // record.  In a production-quality application, the Twitter profile should
-    // be associated with a user record in the application's database, which
-    // allows for account linking and authentication with other identity
-    // providers.
+  function(profile, cb) {
     return cb(null, profile);
   }));
 
 
-// Configure Passport authenticated session persistence.
-//
-// In order to restore authentication state across HTTP requests, Passport needs
-// to serialize users into and deserialize users out of the session.  In a
-// production-quality application, this would typically be as simple as
-// supplying the user ID when serializing, and querying the user record by ID
-// from the database when deserializing.  However, due to the fact that this
-// example does not have a database, the complete Twitter profile is serialized
-// and deserialized.
 passport.serializeUser(function(user, done) {
   done(null, user);
 });
@@ -77,10 +55,10 @@ app.get('/login',
   });
 
 app.get('/login/idp',
-  passport.authenticate('openidconnect'));
+  passport.authenticate('saml2'));
 
-app.get('/callback', 
-  passport.authenticate('openidconnect', { failureRedirect: '/login' }),
+app.post('/login/callback', 
+  passport.authenticate('saml2', { failureRedirect: '/login' }),
   function(req, res) {
     res.redirect('/');
   });
