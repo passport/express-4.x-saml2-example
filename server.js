@@ -1,8 +1,7 @@
 var express = require('express');
 var passport = require('passport');
-
-
 var Strategy = require('passport-saml').Strategy;
+
 
 passport.use('saml2', new Strategy({
     path: '/login/callback',
